@@ -283,10 +283,33 @@
     <div id="toastContainer" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 z-50 flex flex-col gap-2 no-print pointer-events-none"></div>
 
     <script>
-        let deposits = [];
+        let deposits = JSON.parse(localStorage.getItem('amanat_deposits')) || [];
         let currentTab = 'active'; 
         let currentDeleteId = null;
         let isClearingHistory = false;
+
+        function saveDeposits() {
+            try {
+                localStorage.setItem('amanat_deposits', JSON.stringify(deposits));
+            } catch(e) {
+                console.error("Storage full or error", e);
+            }
+        }
+
+        function updateLastToken(tokenStr) {
+            let num = parseInt(tokenStr.replace(/[^0-9]/g, ''));
+            if (!isNaN(num)) {
+                let lastToken = parseInt(localStorage.getItem('amanat_last_token')) || 0;
+                if (num >= lastToken) {
+                    localStorage.setItem('amanat_last_token', num);
+                }
+            }
+        }
+
+        function setNextToken() {
+            let lastToken = parseInt(localStorage.getItem('amanat_last_token')) || 0;
+            document.getElementById('tokenNo').value = 'L-' + (lastToken + 1);
+        }
 
         const timeEl = document.getElementById('currentTime');
         function updateTime() {
@@ -402,8 +425,11 @@
                 status: 'active', timeOut: null
             });
 
+            updateLastToken(tokenNo);
+            saveDeposits();
             this.reset();
             clearImages();
+            setNextToken();
             document.getElementById('tokenNo').focus();
             showToast(`Token ${tokenNo} mehfooz ho gaya!`, 'success');
             
@@ -514,6 +540,7 @@
             if (index !== -1) {
                 deposits[index].status = 'returned';
                 deposits[index].timeOut = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                saveDeposits();
                 showToast(`Token ${deposits[index].tokenNo} wapas kar diya gaya!`, 'info');
                 renderDeposits();
             }
@@ -584,6 +611,8 @@
                 deposits[index].customerImg = document.getElementById('editCustomerImgBase64').value;
                 deposits[index].itemImg = document.getElementById('editItemImgBase64').value;
                 
+                updateLastToken(tokenNo);
+                saveDeposits();
                 showToast('Record update ho gaya!', 'success');
                 closeEditModal();
                 renderDeposits();
@@ -617,11 +646,13 @@
                 deposits = deposits.filter(d => d.id !== currentDeleteId);
                 showToast('Record delete ho gaya!', 'success');
             }
+            saveDeposits();
             closeDeleteModal();
             renderDeposits();
         });
 
         renderDeposits();
+        setNextToken();
     </script>
 </body>
 </html>
