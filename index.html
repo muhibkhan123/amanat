@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.svg">
     <title>Swimming Pool Amanat Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -52,8 +55,13 @@
                     <i class="fa-solid fa-water text-xl md:text-2xl"></i>
                     <span class="font-bold text-lg md:text-xl tracking-wide truncate">Amanat Tracker Pro</span>
                 </div>
-                <div class="text-xs md:text-sm bg-blue-700 px-3 py-1.5 rounded-full border border-blue-500 shadow-inner flex items-center shrink-0">
-                    <i class="fa-solid fa-clock mr-1.5"></i> <span id="currentTime"></span>
+                <div class="flex items-center gap-2">
+                    <button id="installAppBtn" class="hidden text-xs md:text-sm bg-yellow-400 text-yellow-900 font-bold px-3 py-1.5 rounded-full shadow hover:bg-yellow-300 transition-colors">
+                        <i class="fa-solid fa-download mr-1"></i> Install
+                    </button>
+                    <div class="text-xs md:text-sm bg-blue-700 px-3 py-1.5 rounded-full border border-blue-500 shadow-inner flex items-center shrink-0">
+                        <i class="fa-solid fa-clock mr-1.5"></i> <span id="currentTime"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -653,6 +661,35 @@
 
         renderDeposits();
         setNextToken();
+
+        // PWA Installation & Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW failed:', err));
+            });
+        }
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBtn.classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBtn.classList.add('hidden');
+        });
     </script>
 </body>
 </html>
